@@ -18,7 +18,7 @@ class GameScreen(Screen):
         self.next_screen = [ScreensController.MENU, ScreensController.MENU]
 
         self.game = GameManager()
-        self.game.generate_rooms( 11, 0.12)
+        self.game.generate_rooms( 33, 0.12) # best values : 11
 
         self.game.set_callback(self.final_screen)
 
@@ -32,6 +32,14 @@ class GameScreen(Screen):
         # Game State: 
         self.state = RoomStates.NORMAL
 
+        # Image in screen
+        self.image_to_render = None
+        self.update_image_in_screen()
+
+        # room value space
+        self.bg_room_value = pygame.Surface((60, 30))
+        self.bg_room_value.fill((220, 220, 220))
+
 
     def input(self):
 
@@ -40,6 +48,11 @@ class GameScreen(Screen):
 
             if event.type == pygame.MOUSEBUTTONUP:
                 self.state = RoomStates.NORMAL
+
+            # Return to menu
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.final_screen()
 
 
         (mouse_x, mouse_y) = pygame.mouse.get_pos()
@@ -54,6 +67,7 @@ class GameScreen(Screen):
                 self.state = RoomStates.TRANSITION
 
                 self.game.change_room(_go_to)
+                self.update_image_in_screen()
 
 
 
@@ -63,11 +77,23 @@ class GameScreen(Screen):
         screen.blit(_text, _text_rect)
 
 
+    def update_image_in_screen(self) -> None:
+        image = self.game.currently_room.image_link
+        colouredImage = pygame.Surface(image.get_size())
+        colouredImage.fill(self.game.currently_room.base_color)
+        
+        finalImage = image.copy()
+        finalImage.blit(colouredImage, (0, 0), special_flags = pygame.BLEND_MULT)
+
+        self.image_to_render = finalImage
+
+
     def render(self, screen) -> None:
 
         self.screen.fill((0,0,0))
-        # self.game.currently_room.image_link.fill( self.game.currently_room.base_color )
-        self.screen.blit(self.game.currently_room.image_link, (0,0))
+
+        # render colored room
+        self.screen.blit(self.image_to_render, (0,0))
 
         ## render doors (with text)
         _door_counter : int = 0
@@ -83,6 +109,7 @@ class GameScreen(Screen):
             
 
         ## render room id/value
+        self.screen.blit(self.bg_room_value, (SCREEN_WIDTH/2-30, 65))
         self.show_text(screen, str(self.game.get_room_number()), self.number_room, SCREEN_WIDTH/2, 80)
 
     

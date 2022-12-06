@@ -1,6 +1,6 @@
 import pygame
 import os.path as path
-from random import choice
+from random import choice, random, shuffle
 
 from src.components.room import Room
 from src.components.door import Door
@@ -18,10 +18,11 @@ class GameManager:
         # using list (__rooms) to store all rooms of the game
         # and use graph to manager connections : [__rooms[lsit->index]] = {go:[int, int, int], back:[*int]}
         # every room have values (doors) pointing out to a index (with outher room) in list
-        self.__rooms = []
-        self.__graph = {}
+        self.__rooms : list[Room]= []
+        self.__graph : dict[int, list[int|None]] = {}
 
         self.currently_room : Room 
+        self.currently_room_index : int = 0
 
         self._attempts : int = 0 # number of attempts to reach the end
 
@@ -44,32 +45,32 @@ class GameManager:
 
     def generate_rooms(self, num_rooms:int, chance_2_doors:float):
 
-        # if num_rooms < 0 or num_rooms is not int:
-        #     raise ValueError('number of rooms must be a positive integer.')
-
-        # if chance_2_doors < 0 or chance_2_doors > 1:
-        #     raise ValueError('chance of two doors rooms must be a float number btw 0 and 1.')
-
-        _img1 = pygame.image.load(ImagePath.simple_room).convert()
+        _img1 = pygame.image.load(ImagePath.simple_room).convert_alpha()
         
-        _level_list = self.__generate_level_list(num_rooms)
-        print('Teste: ', _level_list)
+        _level_list = self.__generate_level_list(num_rooms) 
+        print('Level list: ', _level_list)
+
+        # link to color pallete : https://lospec.com/palette-list/equpix15
+        LEVEL_COLOR = [
+            (82, 60, 78), (42, 42, 58), (62, 84, 66), (132, 84, 92), (56, 96, 124), (92, 122, 86), (16, 16, 36), (178, 126, 86), 
+            (212, 78, 82), (85, 168, 148), (128, 172, 64), (236, 138, 75), (139, 208, 186), (255, 204, 104), (255, 248, 192) 
+            ] 
+
+        shuffle(LEVEL_COLOR) # randomize order of color in LEVEL_COLOR
+
         # Create vertex/nodes in graph
         for _room_value in range(len(_level_list)):
             _level = _level_list[_room_value]
-            _create_basic_room = Room(_img1, (245, 180, 200), _room_value, _level)
+            _create_basic_room = Room(_img1, LEVEL_COLOR[_level], _room_value, _level)
             self.insert_room( _create_basic_room )
 
         # Create connectiosn btw rooms (doors)
-        # [ISSUE] : implement possibility to generate only 2 doors
-        self.generate_connectiosn_btw_rooms()
+        self.generate_connectiosn_btw_rooms(chance_2_doors)
 
         self.currently_room_index = 0
         self.currently_room = self.__rooms[0] # get first room in graph
 
         self.update_doors_link()
-
-        # self.__graph[-1]['GO_TO'] = [None, None, None]
 
 
     def __generate_level_list(self, number_rooms:int) -> list:
@@ -112,8 +113,15 @@ class GameManager:
                 _level += 2
             _end_append[i] += _level
             
-        # _result = _result + _end_append
         _result.extend(_end_append)
+
+        # adjust order
+        size = len(_result) - 1
+        for i in range(size):
+            next_value = _result[i] + 1
+            
+            if _result[i+1] > next_value:
+                _result[i+1] = next_value
         
         return _result
 
@@ -126,7 +134,7 @@ class GameManager:
 
     def update_doors_link(self):
         
-        _link_to = self.__graph[self.currently_room_index]['GO_TO']
+        _link_to = self.__graph[self.currently_room_index]
         self._attempts += 1
 
         self.doors["A"].set_room_index( _link_to[0] )
@@ -159,37 +167,35 @@ class GameManager:
 
         _last_index : int = len(self.__rooms) - 1
 
-        self.__graph[_last_index] = {
-            'GO_TO' : [None, None, None],       # go to index[0] or index[1] or index[2]
-            'COMES' : []                        # comes from any nodes, just need be different to go to index 
-        }
+        # go to index[0] or index[1] or index[2]
+        self.__graph[_last_index] = [None, None, None]
+        
  
-    def generate_connectiosn_btw_rooms(self) -> None:
+    def generate_connectiosn_btw_rooms(self, chance_2_doors:float) -> None:
         # Create connections btw nodes/edges
 
         # Create a 'map' of index associetdes with levels
-        _room_per_level : dict = {}
+        _room_per_level : dict[int, list[int]] = {} # dict{int: list[int]}
 
         for index in range(len(self.__rooms)):
-            _level = self.__rooms[index].level
-            _get : list = _room_per_level.get(_level, [])
+            _level : int = self.__rooms[index].level
+            _get : list[int] = _room_per_level.get(_level, [])
             _get.append(index)
             _room_per_level.update({_level: _get})
 
         _LAST_LEVEL : int = self.__rooms[-1].level # level of last level room beside end game
 
-        # QUANDO CRIAR A CONEXÃO ENTRE 2 VERTEX DEVO CHEGAR
-            # - Se o index é o mesmo...
-            # - Se o index ésta em (-1, 0, 1) level acima
-            # - Se o target index já envia para aquele index
-
         for room_index in range(len(self.__rooms)):
-            # [ISSUE] : implement possibility to generate only 2 doors
-            _selected_index = []
-            while len(_selected_index) < 3:
+            _doors_num = 2 if random() < chance_2_doors else 3
 
-                _select_level = self.__rooms[room_index].level + choice( (-1, 0, 1) )
-                _get_rooms_in_level =_room_per_level.get(_select_level, None)
+            _selected_index : list[int|None] = []
+
+            while len(_selected_index) < _doors_num:
+
+                # ramdom choice a level value that can be previous, equal or next level 
+                _select_level : int = self.__rooms[room_index].level + choice( (-1, 0, 1) )
+                # get list of rooms in current level
+                _get_rooms_in_level : list[int] | None = _room_per_level.get(_select_level, None)
 
                 if _select_level <= 0 or _select_level > _LAST_LEVEL or _get_rooms_in_level ==  None: 
                     continue
@@ -203,13 +209,16 @@ class GameManager:
                     continue
                 else:
                     _selected_index.append(_target_index)
-                    # self.__graph[_target_index]['COMES'].append(room_index)
                     
             else:
-                print('a: ', room_index, ' --> ', _selected_index)
-                self.__graph[room_index]['GO_TO'] = _selected_index
+                if _doors_num == 2:
+                    _selected_index.insert(1, None) # add/insert None to index[1] ( Door 'B' )
+
+                # print('a: ', room_index, ' --> ', _selected_index)
+                self.__graph[room_index] = _selected_index
 
         #[ISSUE] : validate if exist some way to go for first room (level 1) until the last room (bigger level)
+        self.__generate_path_to_win(_room_per_level)
 
     def print_game_map(self):
 
@@ -220,9 +229,9 @@ class GameManager:
 
         for room in self.__rooms:
             _doors = {
-                "A" : self.__graph[_room_index]['GO_TO'][0],
-                "B" : self.__graph[_room_index]['GO_TO'][1],
-                "C" : self.__graph[_room_index]['GO_TO'][2]
+                "A" : self.__graph[_room_index][0],
+                "B" : self.__graph[_room_index][1],
+                "C" : self.__graph[_room_index][2] 
             }
 
             _result[ _room_index ] = [_doors, room.level, room.room_number]
@@ -232,3 +241,37 @@ class GameManager:
         print("Map of rooms: ")
         for i in _result:
             print('Sala :', i, '| ', _result[i][2], " |--> ", _result[i][0], '| level: ', _result[i][1])
+
+    def __generate_path_to_win(self, level_map:dict[int, list[int]]) -> None:
+
+        print(" --- Level map: --- ")
+        for k in level_map.keys(): 
+            print(k, level_map[k])
+        
+        __level_counter : int = 1 # get first level value (1)
+        _LAST_LEVEL : int = self.__rooms[-1].level # level of last level room beside end game
+
+        for room_index in range(len(self.__rooms)):
+
+            _counter_rooms_checkeds_in_level : int = 0
+
+            for index in self.__graph[room_index]:
+                
+                if index == None:
+                    break
+
+                if self.__rooms[index].level <= ( __level_counter + 1 ):
+                    _counter_rooms_checkeds_in_level += 1
+                    continue
+                
+                if self.__rooms[index].level == _LAST_LEVEL:
+                    break
+
+                if _counter_rooms_checkeds_in_level == ( len(self.__graph[room_index]) - 1):
+                    print("caminho corrigido em", self.__graph[room_index], " --> ", room_index)
+                    self.__graph[room_index][2] = self.__rooms[index].level + 1
+                    print("novo caminho : ", self.__graph[room_index])
+
+        __level_counter += 1
+
+                
