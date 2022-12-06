@@ -72,6 +72,9 @@ class GameScreen(Screen):
         ## render doors (with text)
         _door_counter : int = 0
         for door in self.game.get_doors().values():
+            if door.get_room_index() == None:
+                continue
+
             pygame.draw.rect(self.screen, (2, 2, 2), (door.x, door.y, door.size[0], door.size[1]))
             _letter = ['A', 'B', 'C'][_door_counter]
             _letter_pos = [door.x + door.size[0]/2, door.y + door.size[1]/2]
