@@ -15,7 +15,7 @@ class GameScreen(Screen):
     def __init__(self, screen, param=None) -> None:
         super().__init__(screen, "game-screen")
 
-        self.next_screen = [ScreensController.MENU, ScreensController.MENU]
+        self.next_screen = [ScreensController.MENU, ScreensController.END]
 
         self.game = GameManager()
         self.game.generate_rooms( 33, 0.12) # best values : 11
@@ -52,7 +52,7 @@ class GameScreen(Screen):
             # Return to menu
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    self.final_screen()
+                    self.call_signal(ScreensController.MENU)
 
 
         (mouse_x, mouse_y) = pygame.mouse.get_pos()
@@ -114,6 +114,6 @@ class GameScreen(Screen):
 
     
     def final_screen(self):
-        print('Game over')
+        print('Game end')
         print('Número de portas abertas até chegar ao final: ', self.game.get_attempts())
-        self.call_signal(ScreensController.MENU)
+        self.call_signal(ScreensController.END, self.game.get_attempts())

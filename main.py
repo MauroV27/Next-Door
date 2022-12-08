@@ -3,6 +3,7 @@ from settings import *
 
 from src.screenMenu import Menu
 from src.screenGame import GameScreen
+from src.screenEndGame import EndGame
 
 class Game:
     "Basic class for game init and runnig"
@@ -24,7 +25,7 @@ class Game:
         # self.create_screen(ScreensController.START, Start)
         self.__create_screen(ScreensController.MENU, Menu)
         self.__create_screen(ScreensController.GAME, GameScreen)
-        # self.create_screen(ScreensController.END, EndGame)
+        self.__create_screen(ScreensController.END, EndGame)
 
         self.__call_state(ScreensController.MENU)
 
