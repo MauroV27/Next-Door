@@ -17,7 +17,7 @@ class Game:
         pygame.init()
 
         self.screen = pygame.display.set_mode(( SCREEN_WIDTH, SCREEN_HEIGHT ))
-        pygame.display.set_caption("Pong")
+        pygame.display.set_caption("Next Door") # Show game name in window space
 
         # self.font_normal = pygame.font.SysFont(None, 20, True, False)
 
