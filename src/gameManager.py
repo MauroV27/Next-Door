@@ -58,10 +58,13 @@ class GameManager:
 
         shuffle(LEVEL_COLOR) # randomize order of color in LEVEL_COLOR
 
+        # lambda function to get colors in LEVEL_COLOR wihtout 'escape' of length
+        _get_color = lambda index : LEVEL_COLOR[index] if 0 < index < len(LEVEL_COLOR) else (220, 220, 220)
+
         # Create vertex/nodes in graph
         for _room_value in range(len(_level_list)):
             _level = _level_list[_room_value]
-            _create_basic_room = Room(_img1, LEVEL_COLOR[_level], _room_value, _level)
+            _create_basic_room = Room(_img1, _get_color(_level), _room_value, _level)
             self.insert_room( _create_basic_room )
 
         # Create connectiosn btw rooms (doors)
@@ -78,52 +81,35 @@ class GameManager:
         if 2 <= number_rooms <= 11:
             _result = [1]
             _end_append = [1]
-            _level = 2
             _size = number_rooms - (2)
             _max_height = 3
         elif 11 < number_rooms <= 33:
             _result = [1, 2, 2, 2]
-            _end_append = [2, 2, 2, 1]
-            _level = 3
+            _end_append = [1, 1, 1, 2]
             _size = number_rooms - (4 * 2)
             _max_height = 5
         else:
             _result = [1, 2, 2, 2, 3, 3, 3, 3, 3]
-            _end_append = [3, 3, 3, 3, 3, 2, 2, 2, 1]
+            _end_append = [1, 1, 1, 1, 1, 2, 2, 2, 3]
             _size = number_rooms - (9 * 2)
-            _level = 4
             _max_height = 7
-        
-        _counter = 0
-        for i in range(_size+1):
-            
-            if _counter >= _max_height:
-                _counter = 0
-                _level += 1
-                
-            _result.append(_level)
-            _counter += 1
-        
-        if _counter == 0 :
+
+        _size = _size // _max_height
+
+        _level = _result[-1]
+
+        for _ in range(_size):
             _level += 1
+            _add_list = [_level for _ in range(_max_height)]
+            _result.extend(_add_list)
         
-        _last_value =  _end_append[0]
         for i in range(len(_end_append)):
-            if _last_value != _end_append[i]:
-                _level += 2
-            _end_append[i] += _level
+            _end_append[i] = _level + _end_append[i]
             
         _result.extend(_end_append)
-
-        # adjust order
-        size = len(_result) - 1
-        for i in range(size):
-            next_value = _result[i] + 1
-            
-            if _result[i+1] > next_value:
-                _result[i+1] = next_value
         
         return _result
+
 
     def get_room_number(self) -> int:
         return self.currently_room.room_number
