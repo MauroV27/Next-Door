@@ -16,7 +16,7 @@ class GameManager:
     def __init__(self) -> None:
         
         # using list (__rooms) to store all rooms of the game
-        # and use graph to manager connections : [__rooms[lsit->index]] = {go:[int, int, int], back:[*int]}
+        # and use graph to manager connections : [__rooms[list->index]] = [int|None, int|None, int|None]
         # every room have values (doors) pointing out to a index (with outher room) in list
         self.__rooms : list[Room]= []
         self.__graph : dict[int, list[int|None]] = {}
@@ -24,7 +24,7 @@ class GameManager:
         self.currently_room : Room 
         self.currently_room_index : int = 0
 
-        self._attempts : int = 0 # number of attempts to reach the end
+        self._attempts : int = 0 # number of attempts to reach the end (scores in final game)
 
         self.doors = {
             "A" : Door(120, 116, None),
@@ -210,6 +210,9 @@ class GameManager:
 
         # print ( room number,  doors(A:index, B:index, C:index), level)
 
+        print("Grafo: ")
+        print(self.__graph)
+
         _result :dict = {}
         _room_index = 0
 
@@ -234,30 +237,36 @@ class GameManager:
         for k in level_map.keys(): 
             print(k, level_map[k])
         
-        __level_counter : int = 1 # get first level value (1)
         _LAST_LEVEL : int = self.__rooms[-1].level # level of last level room beside end game
 
-        for room_index in range(len(self.__rooms)):
+        for level in level_map.keys():
+            list_indexs = level_map[level]
 
-            _counter_rooms_checkeds_in_level : int = 0
+            send_for_next_level : int = 0
 
-            for index in self.__graph[room_index]:
+            # check if list have at least one value with more level 
+            for room_index in list_indexs:
+
+                current_level = self.__rooms[room_index].level
+                get_links_of_room = self.__graph[room_index]
+
+                for check_level in get_links_of_room:
+                    if check_level == None:
+                        continue
+
+                    if current_level < self.__rooms[check_level].level:
+                        send_for_next_level += 1
                 
-                if index == None:
-                    break
 
-                if self.__rooms[index].level <= ( __level_counter + 1 ):
-                    _counter_rooms_checkeds_in_level += 1
-                    continue
-                
-                if self.__rooms[index].level == _LAST_LEVEL:
-                    break
+                if send_for_next_level == 0 :
+                    random_index = choice((0, 1, 2))
+                    if level + 1 <= _LAST_LEVEL:
+                        next_level = level_map.get(level+1, [])
 
-                if _counter_rooms_checkeds_in_level == ( len(self.__graph[room_index]) - 1):
-                    print("caminho corrigido em", self.__graph[room_index], " --> ", room_index)
-                    self.__graph[room_index][2] = self.__rooms[index].level + 1
-                    print("novo caminho : ", self.__graph[room_index])
-
-        __level_counter += 1
+                        if next_level != None :
+                            print("Valor modificado:")
+                            print("Valor de ", self.__graph[room_index][random_index])
+                            self.__graph[room_index][random_index] = choice(next_level)
+                            print("Sobrescrito para: ", self.__graph[room_index][random_index])
 
                 

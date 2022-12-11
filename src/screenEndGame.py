@@ -10,8 +10,6 @@ class EndGame(Screen):
     def __init__(self, screen, param=None) -> None:
         super().__init__(screen, "game-screen")
 
-        print("Params em end game: ", param)
-
         self.scores = param
 
         self.next_screen = [ScreensController.MENU, ScreensController.GAME]
